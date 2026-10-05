@@ -16,7 +16,7 @@ Sistem Informasi Harga, Stok, dan Distribusi Bahan Pokok untuk Dinas Perindustri
 
 ## Menjalankan aplikasi
 
-Persyaratan minimum: PHP 8.2, Composer 2. Laravel 12 kompatibel dengan PHP 8.2; target server sesuai PRD adalah PHP 8.3+.
+Persyaratan minimum: PHP 8.2, Composer 2. Laravel 12 kompatibel dengan PHP 8.2;.
 
 ```bash
 composer install
@@ -36,16 +36,6 @@ Pastikan Apache Laragon aktif dan modul `rewrite_module` tersedia. Tidak perlu m
 Konfigurasi bawaan menggunakan SQLite agar demo dapat langsung dijalankan. Untuk MySQL/MariaDB, ubah variabel `DB_*` di `.env`.
 
 ## Akun demo
-
-| Peran | Username | Password |
-|---|---|---|
-| Super Administrator | `admin` | `password` |
-| Validator | `validator` | `password` |
-| Petugas Pasar Tos 3000 | `tos3000` | `password` |
-| Petugas Pasar Pujabahari | `pujabahari` | `password` |
-| Petugas Pasar Mega Legenda | `megalegenda` | `password` |
-| Petugas Pasar Botania 2 | `botania2` | `password` |
-| Petugas Stok | `petugasstok` | `password` |
 
 Ganti seluruh password demo sebelum deployment.
 
