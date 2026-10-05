@@ -1,0 +1,77 @@
+@extends('layouts.app')
+@section('title','Dashboard Harga & Stok — SIDAGANG')
+@section('header','Dashboard Harga & Stok')
+
+@push('styles')
+<style>
+    .dashboard-hero{padding:22px 24px;border:0;border-radius:18px;background:linear-gradient(135deg,#082d4b,#0c70b4);color:#fff;overflow:hidden;position:relative}.dashboard-hero:after{content:"";position:absolute;width:230px;height:230px;border:35px solid #ffffff0d;border-radius:50%;right:-70px;top:-105px}.dashboard-hero p{color:#b9d8ed}.section-anchor{display:flex;gap:8px;padding:5px;background:#e8eef4;border-radius:12px}.section-anchor a{padding:9px 15px;border-radius:9px;color:#587084;text-decoration:none;font-weight:750}.section-anchor a:hover{background:#fff;color:#176bba}.analytics-section{scroll-margin-top:95px}.filter-card .card-body{padding:18px 20px}.metric-card{height:100%;padding:19px 20px}.metric-card small{display:block;margin-bottom:8px;color:#718296;font-size:.75rem;font-weight:750}.metric-card strong{display:block;color:#092a4b;font-size:1.08rem;line-height:1.4}.metric-card span{color:#758697;font-size:.78rem}.metric-icon{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none}.chart-card .card-body{padding:15px 18px}.comparison-table td,.comparison-table th{padding:.72rem .85rem}.commodity-card{height:100%;padding:16px 17px;overflow:hidden;position:relative}.commodity-card h3{min-height:2.6rem;margin:0;color:#102f48;font-size:.9rem;font-weight:800;line-height:1.35}.commodity-card .unit{color:#82909c;font-size:.68rem}.commodity-price{font-size:1rem;font-weight:850;color:#102f48}.commodity-change{display:inline-flex;align-items:center;padding:4px 7px;border-radius:20px;font-size:.66rem;font-weight:800}.mini-chart{height:68px;margin:5px -8px 3px}.empty-state{padding:55px 25px;text-align:center;color:#748596}.empty-state i{display:block;margin-bottom:12px;color:#9bb3c5;font-size:2.4rem}.stock-stat{display:flex;align-items:center;gap:13px;padding:17px 19px}.stock-stat strong{font-size:1.35rem;color:#102f48}.stock-stat small{display:block;color:#778899}.dashboard-label{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#176bba}.apexcharts-tooltip{font-family:inherit!important}@media(max-width:767px){.dashboard-hero{padding:20px}.section-anchor{width:100%;margin-top:10px}.section-anchor a{flex:1;text-align:center}.filter-card .card-body{padding:15px}.metric-card{padding:16px}.comparison-table td,.comparison-table th{padding:.68rem}.commodity-card h3{min-height:auto}.dashboard-hero h1{font-size:1.25rem}}
+</style>
+@endpush
+
+@section('content')
+<div class="dashboard-hero mb-4">
+    <div class="position-relative d-flex flex-wrap justify-content-between align-items-center gap-3" style="z-index:1">
+        <div><span class="small text-info fw-bold">DASHBOARD TERINTEGRASI</span><h1 class="h3 fw-bold mt-1 mb-1">Kondisi Bahan Pokok Kota Batam</h1><p class="mb-0">Analisis harga antar pasar dan perkembangan stok dari laporan yang telah diverifikasi.</p></div>
+        <div class="d-flex align-items-center gap-3"><img src="{{ asset('images/logo-pemko-batam.png') }}" alt="Lambang Kota Batam" style="width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 5px 8px #00172e80)"><div class="section-anchor"><a href="#harga"><i class="bi bi-graph-up me-1"></i> Harga</a><a href="#stok"><i class="bi bi-boxes me-1"></i> Stok</a></div></div>
+    </div>
+</div>
+
+<section id="harga" class="analytics-section mb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3"><div><span class="dashboard-label">Harga Bahan Pokok</span><h2 class="section-title mt-1">Perbandingan Harga Antar Pasar</h2><div class="section-subtitle">Pilih komoditas dan tanggal survei untuk melihat sebaran harga.</div></div><a href="{{ route('prices.index') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-list-ul me-1"></i> Monitoring Harga</a></div>
+
+    <form method="get" action="{{ route('dashboard') }}" class="card filter-card mb-3">
+        @if($selectedStockDate)<input type="hidden" name="stock_date" value="{{ $selectedStockDate }}">@endif
+        <div class="card-body"><div class="row g-3 align-items-end">
+            <div class="col-lg-5"><label class="form-label">Pilih Komoditas</label><select name="commodity_id" class="form-select">@foreach($commodities as $commodity)<option value="{{ $commodity->id }}" @selected($selectedCommodity?->id === $commodity->id)>{{ $commodity->nama }} ({{ $commodity->satuan->kode }})</option>@endforeach</select></div>
+            <div class="col-sm-6 col-lg-2"><label class="form-label">Tanggal Awal</label><select name="date_from" class="form-select">@forelse($priceDates->reverse() as $date)<option value="{{ $date }}" @selected($previousDate === $date)>{{ \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d M Y') }}</option>@empty<option>Belum ada data</option>@endforelse</select></div>
+            <div class="col-sm-6 col-lg-2"><label class="form-label">Tanggal Akhir</label><select name="date_to" class="form-select">@forelse($priceDates as $date)<option value="{{ $date }}" @selected($selectedDate === $date)>{{ \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d M Y') }}</option>@empty<option>Belum ada data</option>@endforelse</select></div>
+            <div class="col-lg-3"><button class="btn btn-primary w-100" @disabled(!$selectedDate)><i class="bi bi-arrow-repeat me-1"></i> Muat Data</button></div>
+        </div></div>
+    </form>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="card metric-card"><div class="d-flex justify-content-between gap-3"><div><small>HARGA RATA-RATA · TANGGAL AKHIR</small><strong>{{ $priceSummary['average'] ? 'Rp '.number_format($priceSummary['average'],0,',','.') : '—' }} <span>/ {{ $selectedCommodity?->satuan->kode }}</span></strong><span>{{ $selectedCommodity?->nama ?? 'Belum ada komoditas' }}</span></div><div class="metric-icon bg-primary-subtle text-primary"><i class="bi bi-calculator"></i></div></div></div></div>
+        <div class="col-md-4"><div class="card metric-card"><div class="d-flex justify-content-between gap-3"><div><small>HARGA TERTINGGI</small><strong>{{ $priceSummary['highest'] ? 'Rp '.number_format($priceSummary['highest']['now'],0,',','.') : '—' }} <span>/ {{ $selectedCommodity?->satuan->kode }}</span></strong><span>{{ $priceSummary['highest']['market']->nama ?? 'Belum ada data' }}</span></div><div class="metric-icon bg-danger-subtle text-danger"><i class="bi bi-arrow-up-right"></i></div></div></div></div>
+        <div class="col-md-4"><div class="card metric-card"><div class="d-flex justify-content-between gap-3"><div><small>HARGA TERENDAH</small><strong>{{ $priceSummary['lowest'] ? 'Rp '.number_format($priceSummary['lowest']['now'],0,',','.') : '—' }} <span>/ {{ $selectedCommodity?->satuan->kode }}</span></strong><span>{{ $priceSummary['lowest']['market']->nama ?? 'Belum ada data' }}</span></div><div class="metric-icon bg-success-subtle text-success"><i class="bi bi-arrow-down-right"></i></div></div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-8"><div class="card chart-card h-100"><div class="card-header"><strong>Harga {{ $selectedCommodity?->nama }}</strong><div class="text-muted small">Perbandingan {{ $markets->count() }} pasar pada {{ $selectedDate ? \Carbon\Carbon::parse($selectedDate)->locale('id')->translatedFormat('d F Y') : 'tanggal terpilih' }}</div></div><div class="card-body">@if($marketRows->whereNotNull('now')->isNotEmpty())<div id="marketPriceChart" style="height:315px"></div>@else<div class="empty-state"><i class="bi bi-bar-chart"></i>Belum ada harga terverifikasi untuk pilihan ini.</div>@endif</div></div></div>
+        <div class="col-xl-4"><div class="card h-100"><div class="card-header"><strong>Rincian Per Pasar</strong><div class="text-muted small">Tanggal awal dibanding tanggal akhir</div></div><div class="table-responsive" style="max-height:365px"><table class="table comparison-table mb-0"><thead><tr><th>Pasar</th><th class="text-end">Awal</th><th class="text-end">Akhir</th><th class="text-end">Δ</th></tr></thead><tbody>@foreach($marketRows as $row)<tr><td class="fw-semibold">{{ str_replace('Pasar ','',$row['market']->nama) }}</td><td class="text-end">{{ $row['before'] !== null ? number_format($row['before'],0,',','.') : '—' }}</td><td class="text-end fw-bold">{{ $row['now'] !== null ? number_format($row['now'],0,',','.') : '—' }}</td><td class="text-end {{ $row['change'] > 0 ? 'text-rise' : ($row['change'] < 0 ? 'text-fall' : 'text-stable') }}">{{ $row['change'] !== null ? (($row['change'] > 0 ? '+' : '').number_format($row['change'],1,',','.').'%') : '—' }}</td></tr>@endforeach</tbody></table></div></div></div>
+    </div>
+
+    <div class="card mb-3"><div class="card-body py-3 text-center"><strong>Harga Rata-rata dan Perubahan Kota Batam</strong><div class="text-muted small">Rentang {{ $previousDate ? \Carbon\Carbon::parse($previousDate)->locale('id')->translatedFormat('d M Y') : '—' }} sampai {{ $selectedDate ? \Carbon\Carbon::parse($selectedDate)->locale('id')->translatedFormat('d M Y') : '—' }} · {{ $reported }} dari {{ $markets->count() }} pasar melapor pada tanggal akhir</div></div></div>
+    @if($priceCards->isNotEmpty())<div class="row g-3">@foreach($priceCards as $card)<div class="col-sm-6 col-xl-3"><div class="card commodity-card"><div class="d-flex justify-content-between gap-2"><h3>{{ $card['commodity']->nama }}</h3><i class="bi bi-graph-up text-primary"></i></div><span class="unit">{{ $card['commodity']->satuan->kode }}</span><div id="priceSpark{{ $card['commodity']->id }}" class="mini-chart"></div><div class="d-flex justify-content-between align-items-center gap-2"><span class="commodity-price">{{ $card['now'] ? 'Rp '.number_format($card['now'],0,',','.') : '—' }}</span><span class="commodity-change {{ $card['change'] > 0 ? 'bg-danger-subtle text-rise' : ($card['change'] < 0 ? 'bg-success-subtle text-fall' : 'bg-light text-stable') }}"><i class="bi {{ $card['change'] > 0 ? 'bi-arrow-up' : ($card['change'] < 0 ? 'bi-arrow-down' : 'bi-dash') }}"></i> {{ number_format(abs($card['change']),1,',','.') }}%</span></div></div></div>@endforeach</div>@else<div class="card"><div class="empty-state"><i class="bi bi-graph-up"></i>Belum ada tren harga yang dapat ditampilkan.</div></div>@endif
+</section>
+
+<section id="stok" class="analytics-section">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3"><div><span class="dashboard-label">Stok Bahan Pokok</span><h2 class="section-title mt-1">Perkembangan Stok Mingguan</h2><div class="section-subtitle">Ringkasan stok berdasarkan laporan terverifikasi.</div></div><a href="{{ route('stocks.index') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-list-ul me-1"></i> Monitoring Stok</a></div>
+    <form method="get" action="{{ route('dashboard') }}#stok" class="card filter-card mb-3">
+        @if($selectedCommodity)<input type="hidden" name="commodity_id" value="{{ $selectedCommodity->id }}">@endif
+        @if($previousDate)<input type="hidden" name="date_from" value="{{ $previousDate }}">@endif
+        @if($selectedDate)<input type="hidden" name="date_to" value="{{ $selectedDate }}">@endif
+        <div class="card-body"><div class="row g-3 align-items-end"><div class="col-md-9"><label class="form-label">Tanggal Laporan Stok</label><select name="stock_date" class="form-select">@forelse($stockDates as $date)<option value="{{ $date }}" @selected($selectedStockDate === $date)>{{ \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d F Y') }}</option>@empty<option>Belum ada laporan stok terverifikasi</option>@endforelse</select></div><div class="col-md-3"><button class="btn btn-primary w-100" @disabled(!$selectedStockDate)><i class="bi bi-arrow-repeat me-1"></i> Muat Data</button></div></div></div>
+    </form>
+
+    <div class="row g-3 mb-4">
+        @foreach([['bi-boxes','primary',$stockSummary['total'],'Komoditas tercatat'],['bi-arrow-up-right','success',$stockSummary['up'],'Stok meningkat'],['bi-arrow-down-right','danger',$stockSummary['down'],'Stok menurun'],['bi-dash-lg','secondary',$stockSummary['stable'],'Stok stabil']] as $stat)
+            <div class="col-6 col-xl-3"><div class="card stock-stat"><div class="metric-icon bg-{{ $stat[1] }}-subtle text-{{ $stat[1] }}"><i class="bi {{ $stat[0] }}"></i></div><div><strong>{{ $stat[2] }}</strong><small>{{ $stat[3] }}</small></div></div></div>
+        @endforeach
+    </div>
+
+    @if($stockCards->isNotEmpty())<div class="row g-3">@foreach($stockCards as $card)<div class="col-sm-6 col-xl-3"><div class="card commodity-card"><div class="d-flex justify-content-between gap-2"><h3>{{ $card['commodity']->nama }}</h3><i class="bi bi-box-seam text-warning"></i></div><span class="unit">{{ $card['commodity']->satuan->kode }}</span><div id="stockSpark{{ $card['commodity']->id }}" class="mini-chart"></div><div class="d-flex justify-content-between align-items-center gap-2"><span class="commodity-price">{{ number_format($card['now'],0,',','.') }} <small class="unit">{{ $card['commodity']->satuan->kode }}</small></span><span class="commodity-change {{ $card['change'] > 0 ? 'bg-success-subtle text-fall' : ($card['change'] < 0 ? 'bg-danger-subtle text-rise' : 'bg-light text-stable') }}"><i class="bi {{ $card['change'] > 0 ? 'bi-arrow-up' : ($card['change'] < 0 ? 'bi-arrow-down' : 'bi-dash') }}"></i> {{ number_format(abs($card['change']),1,',','.') }}%</span></div></div></div>@endforeach</div>@else<div class="card"><div class="empty-state"><i class="bi bi-box-seam"></i><strong class="d-block text-dark mb-1">Belum ada stok terverifikasi</strong>Dashboard stok akan terisi otomatis setelah laporan stok diverifikasi.</div></div>@endif
+</section>
+@endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+const money=value=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(value||0);
+@if($marketRows->whereNotNull('now')->isNotEmpty())
+new ApexCharts(document.querySelector('#marketPriceChart'),{chart:{type:'bar',height:315,toolbar:{show:false},animations:{enabled:false}},series:[{name:'Harga',data:@json($marketRows->pluck('now')->values())}],xaxis:{categories:@json($marketRows->map(fn($row)=>str_replace('Pasar ','',$row['market']->nama))->values()),labels:{rotate:-38,style:{fontSize:'10px'}}},yaxis:{labels:{formatter:value=>new Intl.NumberFormat('id-ID',{notation:'compact'}).format(value)}},tooltip:{y:{formatter:money}},colors:['#1689e5'],plotOptions:{bar:{borderRadius:5,columnWidth:'52%'}},dataLabels:{enabled:false},grid:{borderColor:'#e8eef3',strokeDashArray:4}}).render();
+@endif
+const sparkOptions=(series,color)=>({chart:{type:'area',height:68,sparkline:{enabled:true},animations:{enabled:false}},series:[{data:series}],stroke:{curve:'smooth',width:2},fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:.35,opacityTo:.04}},colors:[color],tooltip:{y:{formatter:value=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(value)}}});
+@foreach($priceCards as $card)new ApexCharts(document.querySelector('#priceSpark{{ $card['commodity']->id }}'),sparkOptions(@json($card['series']), '#1689e5')).render();@endforeach
+@foreach($stockCards as $card)new ApexCharts(document.querySelector('#stockSpark{{ $card['commodity']->id }}'),sparkOptions(@json($card['series']), '#e49a17')).render();@endforeach
+</script>
+@endpush

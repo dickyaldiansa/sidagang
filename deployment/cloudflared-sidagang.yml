@@ -1,0 +1,12 @@
+tunnel: 3409295b-e4e3-409c-947b-3753428db43b
+credentials-file: C:/Users/MyPC PRO/.cloudflared/3409295b-e4e3-409c-947b-3753428db43b.json
+protocol: http2
+metrics: 127.0.0.1:21243
+no-autoupdate: true
+
+ingress:
+  - hostname: sidagang.appcatalog.id
+    service: http://127.0.0.1:80
+    originRequest:
+      httpHostHeader: sidagang.test
+  - service: http_status:404

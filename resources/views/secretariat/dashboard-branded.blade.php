@@ -1,0 +1,6 @@
+@extends('layouts.secretariat')
+@section('content')
+<div class="d-flex justify-content-between align-items-center mb-4"><div class="d-flex align-items-center gap-3"><img src="{{ asset('images/logo-pemko-batam.png') }}" alt="Lambang Kota Batam" style="width:54px;height:54px;object-fit:contain"><div><h3 class="fw-bold mb-1">Dashboard Sekretariat</h3><p class="text-muted mb-0">Pusat administrasi dan koordinasi internal Disperindag.</p></div></div><a href="{{ route('secretariat.index') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Data</a></div>
+<div class="row g-3 mb-4">@foreach([['Total Administrasi',$total,'bi-archive'],['Data Bulan Ini',$bulan,'bi-calendar-check'],['Perlu Ditindaklanjuti',$proses,'bi-hourglass-split']] as $s)<div class="col-md-4"><div class="card p-4"><i class="bi {{ $s[2] }} text-warning fs-4"></i><div class="stat">{{ $s[1] }}</div><span class="text-muted">{{ $s[0] }}</span></div></div>@endforeach</div>
+<div class="row g-3">@foreach($types as $t)<div class="col-md-6 col-xl-3"><a class="card p-4 d-block text-decoration-none text-dark h-100" href="{{ route('secretariat.index',['type'=>$t['key']]) }}"><strong>{{ $t['label'] }}</strong><div class="stat mt-2">{{ $t['count'] }}</div><small class="text-muted">Kelola data <i class="bi bi-arrow-right"></i></small></a></div>@endforeach</div>
+@endsection

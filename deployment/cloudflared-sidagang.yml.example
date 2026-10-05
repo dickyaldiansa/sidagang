@@ -1,0 +1,12 @@
+tunnel: TUNNEL_ID
+credentials-file: D:/laragon/www/sidagang/deployment/TUNNEL_ID.json
+protocol: http2
+metrics: 127.0.0.1:21243
+no-autoupdate: true
+
+ingress:
+  - hostname: sidagang.appcatalog.id
+    service: http://127.0.0.1:80
+    originRequest:
+      httpHostHeader: sidagang.test
+  - service: http_status:404
