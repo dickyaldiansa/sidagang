@@ -35,7 +35,7 @@ class ExampleTest extends TestCase
         $this->seed();
         foreach (['admin', 'validator', 'tos3000', 'petugasstok'] as $username) {
             $this->post('/login', ['username' => $username, 'password' => 'password'])->assertRedirect('/dashboard');
-            $this->post('/logout')->assertRedirect('https://sidagang.appcatalog.id/');
+            $this->post('/logout')->assertRedirect('/');
         }
     }
 
@@ -46,8 +46,8 @@ class ExampleTest extends TestCase
         $this->get('/login')->assertOk()->assertSee('Masuk Bidang Pasar')->assertSee('Petugas Bidang Pasar');
         $this->post('/login', ['username' => 'petugasbidangpasar', 'password' => 'password'])->assertRedirect('/bidang-pasar');
         $this->get('/bidang-pasar')->assertOk()->assertSee('BIDANG PASAR')->assertDontSee('HARGA BAHAN POKOK');
-        $this->post('/bidang-pasar/pengelola', ['nama_perusahaan' => 'Pengelola Demo', 'alamat' => 'Batam', 'no_telepon' => '0778000001', 'kontak_person' => 'Andi', 'kapasitas_tenant' => 25])->assertRedirect();
-        $this->assertDatabaseHas('pengelola_pasar', ['nama_perusahaan' => 'Pengelola Demo', 'status' => 'verified']);
+        $this->post('/bidang-pasar/pengelola', ['nama_perusahaan' => 'Pengelola Demo', 'nama_pasar' => 'Pasar Demo', 'alamat' => 'Batam', 'no_telepon' => '0778000001', 'kontak_person' => 'Andi', 'kapasitas_tenant' => 25])->assertRedirect();
+        $this->assertDatabaseHas('pengelola_pasar', ['nama_perusahaan' => 'Pengelola Demo', 'nama_pasar' => 'Pasar Demo', 'status' => 'verified']);
         $managerId = \App\Models\PengelolaPasar::where('nama_perusahaan', 'Pengelola Demo')->value('id');
         $this->post('/bidang-pasar/pedagang', ['pengelola_pasar_id' => $managerId, 'nama_toko' => 'Toko Demo', 'penanggung_jawab' => 'Siti', 'no_telepon' => '0812000000', 'bidang_usaha' => 'Sembako'])->assertRedirect();
         $this->assertDatabaseHas('pedagang_pasar', ['nama_toko' => 'Toko Demo', 'status' => 'verified']);
@@ -89,14 +89,14 @@ class ExampleTest extends TestCase
         $this->get('/laporan/bulanan/csv?start_date=2026-09-01&end_date=2026-09-30')->assertOk();
         $this->get('/laporan/stok/csv?start_date=2026-09-01&end_date=2026-09-30')->assertOk();
         $this->get('/bidang-pasar')->assertOk()->assertSee('Data Pengelola dan Pedagang Pasar')->assertSee('Tambah Data Pengelola')->assertSee('Pilih Bidang Layanan')->assertDontSee('HARGA BAHAN POKOK');
-        $this->post('/bidang-pasar/pengelola', ['nama_perusahaan' => 'PT Pasar Batam', 'alamat' => 'Batam Centre', 'no_telepon' => '0778123456', 'kontak_person' => 'Budi', 'kapasitas_tenant' => 100])->assertRedirect();
+        $this->post('/bidang-pasar/pengelola', ['nama_perusahaan' => 'PT Pasar Batam', 'nama_pasar' => 'Pasar Batam', 'alamat' => 'Batam Centre', 'no_telepon' => '0778123456', 'kontak_person' => 'Budi', 'kapasitas_tenant' => 100])->assertRedirect();
         $managerId = \App\Models\PengelolaPasar::where('nama_perusahaan', 'PT Pasar Batam')->value('id');
         $this->post('/bidang-pasar/pedagang', ['pengelola_pasar_id' => $managerId, 'nama_toko' => 'Toko Sejahtera', 'penanggung_jawab' => 'Siti', 'no_telepon' => '08123456789', 'bidang_usaha' => 'Sembako', 'nomor_kios' => 'A-01'])->assertRedirect();
         $this->assertDatabaseHas('pengelola_pasar', ['nama_perusahaan' => 'PT Pasar Batam', 'status' => 'verified']);
         $this->assertDatabaseHas('pedagang_pasar', ['nama_toko' => 'Toko Sejahtera', 'status' => 'verified']);
         $merchantId = \App\Models\PedagangPasar::where('nama_toko', 'Toko Sejahtera')->value('id');
         $this->get('/bidang-pasar?edit_manager='.$managerId)->assertOk()->assertSee('Edit Data Pengelola')->assertSee('PT Pasar Batam');
-        $this->put('/bidang-pasar/pengelola/'.$managerId, ['nama_perusahaan' => 'PT Pasar Batam Baru', 'alamat' => 'Batam Centre', 'no_telepon' => '0778123456', 'kontak_person' => 'Budi', 'kapasitas_tenant' => 110])->assertRedirect('/bidang-pasar');
+        $this->put('/bidang-pasar/pengelola/'.$managerId, ['nama_perusahaan' => 'PT Pasar Batam Baru', 'nama_pasar' => 'Pasar Batam Baru', 'alamat' => 'Batam Centre', 'no_telepon' => '0778123456', 'kontak_person' => 'Budi', 'kapasitas_tenant' => 110])->assertRedirect('/bidang-pasar');
         $this->get('/bidang-pasar?edit_merchant='.$merchantId)->assertOk()->assertSee('Edit Data Pedagang')->assertSee('Toko Sejahtera');
         $this->put('/bidang-pasar/pedagang/'.$merchantId, ['pengelola_pasar_id' => $managerId, 'nama_toko' => 'Toko Sejahtera Baru', 'penanggung_jawab' => 'Siti', 'no_telepon' => '08123456789', 'bidang_usaha' => 'Sembako', 'nomor_kios' => 'A-02'])->assertRedirect('/bidang-pasar');
         $this->assertDatabaseHas('pengelola_pasar', ['id' => $managerId, 'nama_perusahaan' => 'PT Pasar Batam Baru']);

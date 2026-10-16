@@ -4,4 +4,16 @@
 <div class="row g-3 mb-4">@foreach([['bi-buildings',$managers,'Pengelola aktif'],['bi-shop',$merchants,'Pedagang aktif'],['bi-grid-3x3-gap',$capacity,'Kapasitas tenant'],['bi-pie-chart',$occupancy.'%','Tingkat keterisian']] as $item)<div class="col-sm-6 col-xl-3"><div class="card h-100"><div class="card-body"><i class="bi {{ $item[0] }} text-success fs-4"></i><h3 class="mt-3 mb-1">{{ $item[1] }}</h3><span class="text-muted">{{ $item[2] }}</span></div></div></div>@endforeach</div>
 <div class="row g-4"><div class="col-xl-7"><div class="card"><div class="card-header"><strong>Keterisian per Pengelola</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Pengelola</th><th>Tenant Aktif</th><th>Kapasitas</th><th>Keterisian</th></tr></thead><tbody>@forelse($managerStats as $row)@php $rate=$row->kapasitas_tenant?min(100,round($row->pedagang_count/$row->kapasitas_tenant*100)):0; @endphp<tr><td>{{ $row->nama_perusahaan }}</td><td>{{ $row->pedagang_count }}</td><td>{{ $row->kapasitas_tenant ?: '—' }}</td><td>{{ $rate }}%</td></tr>@empty<tr><td colspan="4">Belum ada data.</td></tr>@endforelse</tbody></table></div></div></div><div class="col-xl-5"><div class="card mb-4"><div class="card-header"><strong>Bidang Usaha</strong></div><div class="card-body">@forelse($businessTypes as $row)<div class="d-flex justify-content-between border-bottom py-2"><span>{{ $row->bidang_usaha }}</span><strong>{{ $row->total }}</strong></div>@empty<div class="text-muted">Belum ada data.</div>@endforelse</div></div><div class="card"><div class="card-header"><strong>Pedagang Terbaru</strong></div>@foreach($recentMerchants as $row)<div class="p-3 border-bottom"><strong>{{ $row->nama_toko }}</strong><small class="d-block text-muted">{{ $row->pengelola->nama_perusahaan }}</small></div>@endforeach</div></div></div>
 @endsection
-@push('scripts')@include('market-data._navigation')@endpush
+@push('scripts')
+@include('market-data._navigation')
+<script>
+const marketNames=@json($managerStats->pluck('nama_pasar')->values());
+const recentMarketNames=@json($recentMerchants->map(fn ($merchant) => $merchant->pengelola?->nama_pasar ?: $merchant->pengelola?->nama_perusahaan)->values());
+document.querySelector('.section-subtitle').textContent='Ringkasan pasar, pedagang, kapasitas, dan keterisian tenant.';
+document.querySelectorAll('.card .text-muted').forEach(element=>{if(element.textContent.trim()==='Pengelola aktif')element.textContent='Pasar aktif';});
+document.querySelectorAll('.card-header strong').forEach(element=>{if(element.textContent.trim()==='Keterisian per Pengelola')element.textContent='Keterisian per Pasar';});
+const occupancyTable=document.querySelector('.col-xl-7 table');
+if(occupancyTable){occupancyTable.querySelector('thead th').textContent='Pasar';[...occupancyTable.querySelectorAll('tbody tr')].forEach((row,index)=>{if(row.cells.length)row.cells[0].textContent=marketNames[index]||'—';});}
+document.querySelectorAll('.col-xl-5 .card:last-child .p-3 small').forEach((element,index)=>element.textContent=recentMarketNames[index]||'—');
+</script>
+@endpush

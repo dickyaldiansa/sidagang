@@ -69,7 +69,10 @@ Route::middleware('auth')->group(function () {
     });
     Route::middleware('permission:market_data.view')->group(function () {
         Route::get('/bidang-pasar', [MarketDataController::class, 'index'])->name('market-data.index');
+        Route::get('/bidang-pasar/pengelola', [MarketDataController::class, 'index'])->defaults('section', 'manager')->name('market-data.managers.index');
+        Route::get('/bidang-pasar/pedagang', [MarketDataController::class, 'index'])->defaults('section', 'merchant')->name('market-data.merchants.index');
         Route::get('/bidang-pasar/dashboard', [MarketAdminController::class, 'dashboard'])->name('market-data.dashboard');
+        Route::get('/bidang-pasar/laporan', [MarketDataController::class, 'report'])->name('market-data.report');
     });
     Route::middleware('permission:market_data.create')->group(function () {
         Route::post('/bidang-pasar/pengelola', [MarketDataController::class, 'storeManager'])->name('market-data.managers.store');
