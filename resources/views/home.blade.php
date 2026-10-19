@@ -41,7 +41,7 @@
     <section class="hero" id="beranda">
         <div class="container position-relative" style="z-index:1">
             <div class="row align-items-center g-5">
-                <div class="col-lg-7"><span class="eyebrow"><i class="bi bi-buildings"></i> Pemerintah Kota Batam</span><h1>SI<span>DAGANG</span></h1><p class="tagline">Sistem Informasi Digital Integrasi Perdagangan</p><a class="btn btn-primary btn-lg mt-4" href="#bidang">Jelajahi Layanan <i class="bi bi-arrow-down ms-2"></i></a></div>
+                <div class="col-lg-7"><span class="eyebrow"><i class="bi bi-buildings"></i> Pemerintah Kota Batam</span><h1>SI<span>DAGANG</span></h1><p class="tagline">Sistem Informasi Integrasi Data Perdagangan</p><a class="btn btn-primary btn-lg mt-4" href="#bidang">Jelajahi Layanan <i class="bi bi-arrow-down ms-2"></i></a></div>
                 <div class="col-lg-5 d-none d-md-block"><div class="hero-orbit"><div class="hero-logo"><i class="bi bi-grid-1x2-fill"></i><strong>TERINTEGRASI</strong><small class="text-white-50">Satu portal, berbagai layanan</small></div></div></div>
             </div>
         </div>
