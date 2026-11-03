@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PedagangPasar;
+use App\Models\Pasar;
 use App\Models\PengelolaPasar;
 use App\Models\Role;
 use App\Models\User;
@@ -28,7 +29,67 @@ class MarketAdminController extends Controller
     public function master()
     {
         $businessTypes = DB::table('bidang_usaha_pasar')->orderBy('nama')->get();
-        return view('market-data.master', compact('businessTypes'));
+        $markets = Pasar::orderBy('urutan')->orderBy('nama')->get();
+        $marketManagers = PengelolaPasar::where('is_active', true)->orderBy('nama_pasar')->orderBy('nama_perusahaan')->get();
+        return view('market-data.master', compact('businessTypes', 'markets', 'marketManagers'));
+    }
+
+    public function mergeMarketManagers(Request $request)
+    {
+        $data = $request->validate([
+            'source_id' => 'required|different:target_id|exists:pengelola_pasar,id',
+            'target_id' => 'required|exists:pengelola_pasar,id',
+        ]);
+
+        DB::transaction(function () use ($data) {
+            $source = PengelolaPasar::lockForUpdate()->findOrFail($data['source_id']);
+            $target = PengelolaPasar::lockForUpdate()->findOrFail($data['target_id']);
+            abort_unless($source->is_active && $target->is_active, 422, 'Data pasar sumber dan tujuan harus aktif.');
+
+            $duplicates = PedagangPasar::where('pengelola_pasar_id', $source->id)
+                ->whereIn('nama_toko', PedagangPasar::where('pengelola_pasar_id', $target->id)->pluck('nama_toko'))
+                ->pluck('nama_toko');
+            if ($duplicates->isNotEmpty()) {
+                abort(422, 'Penggabungan dibatalkan. Terdapat toko dengan nama sama pada pasar tujuan: '.$duplicates->unique()->implode(', '));
+            }
+
+            PedagangPasar::where('pengelola_pasar_id', $source->id)->update(['pengelola_pasar_id' => $target->id]);
+            $source->update(['is_active' => false, 'merged_into_id' => $target->id, 'merged_at' => now()]);
+        });
+
+        return back()->with('success', 'Data pasar berhasil digabungkan. Seluruh data pedagang telah dipindahkan ke pasar tujuan.');
+    }
+
+    public function storeMarket(Request $request)
+    {
+        $data = $request->validate([
+            'kode' => 'required|string|max:20|unique:pasar,kode',
+            'nama' => 'required|string|max:150|unique:pasar,nama',
+            'alamat' => 'nullable|string|max:2000',
+            'kecamatan' => 'nullable|string|max:100',
+            'urutan' => 'nullable|integer|min:0',
+        ]);
+        Pasar::create($data + ['urutan' => $data['urutan'] ?? 0, 'is_active' => true]);
+        return back()->with('success', 'Data pasar berhasil ditambahkan.');
+    }
+
+    public function updateMarket(Request $request, Pasar $market)
+    {
+        $data = $request->validate([
+            'kode' => ['required', 'string', 'max:20', Rule::unique('pasar', 'kode')->ignore($market->id)],
+            'nama' => ['required', 'string', 'max:150', Rule::unique('pasar', 'nama')->ignore($market->id)],
+            'alamat' => 'nullable|string|max:2000',
+            'kecamatan' => 'nullable|string|max:100',
+            'urutan' => 'nullable|integer|min:0',
+        ]);
+        $market->update($data + ['urutan' => $data['urutan'] ?? 0]);
+        return back()->with('success', 'Data pasar berhasil diperbarui.');
+    }
+
+    public function toggleMarket(Pasar $market)
+    {
+        $market->update(['is_active' => ! $market->is_active]);
+        return back()->with('success', 'Status pasar berhasil diperbarui.');
     }
 
     public function storeBusinessType(Request $request)

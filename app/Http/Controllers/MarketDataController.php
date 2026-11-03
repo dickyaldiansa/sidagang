@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PedagangPasar;
 use App\Models\PengelolaPasar;
+use App\Models\Pasar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -30,6 +31,7 @@ class MarketDataController extends Controller
         $pengelolaOptions = PengelolaPasar::where('is_active', true)->orderBy('nama_perusahaan')->get();
         $suggestions = collect()->merge(PengelolaPasar::pluck('nama_perusahaan'))->merge(PengelolaPasar::pluck('nama_pasar'))->merge(PedagangPasar::pluck('nama_toko'))->filter()->unique()->sort()->values();
         $businessTypes = DB::table('bidang_usaha_pasar')->where('is_active', true)->orderBy('nama')->pluck('nama');
+        $markets = Pasar::where('is_active', true)->orderBy('urutan')->orderBy('nama')->get(['id', 'nama']);
         $editingManager = $request->filled('edit_manager') ? PengelolaPasar::findOrFail($request->integer('edit_manager')) : null;
         $editingMerchant = $request->filled('edit_merchant') ? PedagangPasar::findOrFail($request->integer('edit_merchant')) : null;
         foreach ([$editingManager, $editingMerchant] as $editing) {
@@ -40,7 +42,7 @@ class MarketDataController extends Controller
         $managerEditRows = $pengelola->getCollection()->map(fn ($row) => ['id' => $row->id, 'allowed' => $request->user()->isAdmin() || $row->created_by === $request->user()->id])->values();
         $merchantEditRows = $pedagang->getCollection()->map(fn ($row) => ['id' => $row->id, 'allowed' => $request->user()->isAdmin() || $row->created_by === $request->user()->id])->values();
 
-        return view('market-data.index', compact('pengelola', 'pedagang', 'pengelolaOptions', 'search', 'status', 'suggestions', 'businessTypes', 'editingManager', 'editingMerchant', 'managerEditRows', 'merchantEditRows', 'section'));
+        return view('market-data.index', compact('pengelola', 'pedagang', 'pengelolaOptions', 'search', 'status', 'suggestions', 'businessTypes', 'markets', 'editingManager', 'editingMerchant', 'managerEditRows', 'merchantEditRows', 'section'));
     }
 
     public function storeManager(Request $request)

@@ -86,6 +86,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/bidang-pasar/export/rekap', [MarketDataController::class, 'excel'])->middleware('permission:market_data.export')->name('market-data.csv');
     Route::middleware('permission:market_data.manage')->group(function () {
         Route::get('/bidang-pasar/master', [MarketAdminController::class, 'master'])->name('market-data.master');
+        Route::post('/bidang-pasar/master/gabungkan-pengelola', [MarketAdminController::class, 'mergeMarketManagers'])->name('market-data.managers.merge');
+        Route::post('/bidang-pasar/master/pasar', [MarketAdminController::class, 'storeMarket'])->name('market-data.markets.store');
+        Route::put('/bidang-pasar/master/pasar/{market}', [MarketAdminController::class, 'updateMarket'])->name('market-data.markets.update');
+        Route::patch('/bidang-pasar/master/pasar/{market}/toggle', [MarketAdminController::class, 'toggleMarket'])->name('market-data.markets.toggle');
         Route::post('/bidang-pasar/master/bidang-usaha', [MarketAdminController::class, 'storeBusinessType'])->name('market-data.business-types.store');
         Route::delete('/bidang-pasar/master/bidang-usaha/{id}', [MarketAdminController::class, 'deleteBusinessType'])->name('market-data.business-types.destroy');
         Route::get('/bidang-pasar/akun', [MarketAdminController::class, 'accounts'])->name('market-data.accounts');
