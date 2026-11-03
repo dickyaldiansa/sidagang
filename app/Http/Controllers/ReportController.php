@@ -9,6 +9,7 @@ use App\Models\LaporanStok;
 use App\Models\Pasar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -56,7 +57,7 @@ class ReportController extends Controller
         return view('reports.monthly', compact('startDate', 'endDate', 'markets', 'dates', 'commodities', 'matrix'));
     }
 
-    public function csv(Request $request)
+    public function excel(Request $request)
     {
         [$startDate, $endDate] = $this->dateRange($request);
         $markets = Pasar::where('is_active', 1)->orderBy('urutan')->get();
@@ -69,31 +70,60 @@ class ReportController extends Controller
             }
         }
 
-        return response()->streamDownload(function () use ($markets, $dates, $matrix) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['DINAS PERINDUSTRIAN DAN PERDAGANGAN KOTA BATAM']);
-            $header = ['No', 'Komoditas', 'Satuan'];
-            foreach ($markets as $m) {
-                foreach ($dates as $d) {
-                    $header[] = $m->nama.' '.date('d/m', strtotime($d));
-                }
-            }$header[] = 'Rata-rata';
-            fputcsv($out, $header);
-            foreach (KomoditasHarga::with('satuan')->where('is_active', 1)->orderBy('urutan')->get() as $i => $c) {
-                $row = [$i + 1, $c->nama, $c->satuan->kode];
-                $values = [];
-                foreach ($markets as $m) {
-                    foreach ($dates as $d) {
-                        $v = $matrix[$c->id][$m->id][$d] ?? null;
-                        $row[] = $v;
-                        if ($v !== null) {
-                            $values[] = (float) $v;
-                        }
+        $commodities = KomoditasHarga::with('satuan')->where('is_active', 1)->orderBy('urutan')->get();
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+        $period = Carbon::parse($startDate)->format('d M').' - '.Carbon::parse($endDate)->format('d M Y');
+
+        // Sheet pertama: satu harga rata-rata per pasar untuk setiap komoditas.
+        $summary = $spreadsheet->createSheet();
+        $summary->setTitle('Ringkasan');
+        $summaryLastColumn = Coordinate::stringFromColumnIndex(3 + max($markets->count(), 1));
+        $summary->mergeCells("A1:{$summaryLastColumn}1");
+        $summary->mergeCells("A2:{$summaryLastColumn}2");
+        $summary->setCellValue('A1', 'REKAP HARGA BAHAN POKOK - BATAM');
+        $summary->setCellValue('A2', 'Dinas Perindustrian dan Perdagangan Kota Batam | Data tersedia '.$period);
+        $summary->fromArray([array_merge(['No', 'Komoditas', 'Satuan'], $markets->map(fn ($market) => preg_replace('/^Pasar\s+/i', '', $market->nama))->all())], null, 'A4');
+        foreach ($commodities as $commodityIndex => $commodity) {
+            $row = $commodityIndex + 5;
+            $summary->fromArray([[$commodityIndex + 1, $commodity->nama, $commodity->satuan?->kode ?: '-']], null, "A{$row}");
+            foreach ($markets as $marketIndex => $market) {
+                $values = collect($dates)->map(fn ($date) => $matrix[$commodity->id][$market->id][$date] ?? null)->filter(fn ($value) => $value !== null);
+                $summary->setCellValue(Coordinate::stringFromColumnIndex($marketIndex + 4).$row, $values->isNotEmpty() ? $values->avg() : null);
+            }
+        }
+        $this->stylePriceWorkbookSheet($summary, $summaryLastColumn, $commodities->count() + 4, 5, 'D5', true);
+
+        // Setiap pasar memiliki sheet sendiri dengan harga per hari, sesuai format rekap harian.
+        foreach ($markets as $market) {
+            $sheet = $spreadsheet->createSheet();
+            $marketName = preg_replace('/^Pasar\s+/i', '', $market->nama);
+            $sheet->setTitle(substr($marketName ?: 'Pasar', 0, 31));
+            $lastColumn = Coordinate::stringFromColumnIndex(3 + max($dates->count(), 1));
+            $sheet->mergeCells("A1:{$lastColumn}1");
+            $sheet->mergeCells("A2:{$lastColumn}2");
+            $sheet->setCellValue('A1', 'HARGA KOMODITAS - PASAR '.strtoupper($marketName));
+            $sheet->setCellValue('A2', 'Rupiah per satuan | Data harian '.$period.' | Sel kosong = data tidak tersedia');
+            $sheet->fromArray([array_merge(['No', 'Komoditas', 'Satuan'], $dates->map(fn ($date) => Carbon::parse($date)->format('d/m'))->all())], null, 'A4');
+            foreach ($commodities as $commodityIndex => $commodity) {
+                $row = $commodityIndex + 5;
+                $sheet->fromArray([[$commodityIndex + 1, $commodity->nama, $commodity->satuan?->kode ?: '-']], null, "A{$row}");
+                foreach ($dates as $dateIndex => $date) {
+                    $value = $matrix[$commodity->id][$market->id][$date] ?? null;
+                    if ($value !== null) {
+                        $sheet->setCellValue(Coordinate::stringFromColumnIndex($dateIndex + 4).$row, (float) $value);
                     }
-                }$row[] = count($values) ? array_sum($values) / count($values) : null;
-                fputcsv($out, $row);
-            }fclose($out);
-        }, "rekap-harga-{$startDate}-sd-{$endDate}.csv", ['Content-Type' => 'text/csv; charset=UTF-8']);
+                }
+            }
+            $this->stylePriceWorkbookSheet($sheet, $lastColumn, $commodities->count() + 4, 5, 'D5', false);
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, "rekap-harga-{$startDate}-sd-{$endDate}.xlsx", ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
     }
 
     public function stocks(Request $request)
@@ -103,7 +133,7 @@ class ReportController extends Controller
         return view('reports.stocks-detail', compact('startDate', 'endDate', 'reports'));
     }
 
-    public function stockCsv(Request $request)
+    public function stockExcel(Request $request)
     {
         [$startDate, $endDate] = $this->dateRange($request);
         $reports = LaporanStok::with('details.komoditas.satuan')->whereIn('status', ['submitted', 'verified'])->whereBetween('tanggal', [$startDate, $endDate])->orderBy('tanggal')->orderBy('id')->get();
@@ -178,6 +208,47 @@ class ReportController extends Controller
             (new Xlsx($spreadsheet))->save('php://output');
             $spreadsheet->disconnectWorksheets();
         }, "rekap-stok-{$startDate}-sd-{$endDate}.xlsx", ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
+    private function stylePriceWorkbookSheet($sheet, string $lastColumn, int $lastRow, int $firstDataRow, string $firstPriceCell, bool $summary): void
+    {
+        $sheet->getStyle("A1:{$lastColumn}1")->applyFromArray([
+            'font' => ['bold' => true, 'size' => 15, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '112E49']],
+            'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet->getStyle("A2:{$lastColumn}2")->applyFromArray([
+            'font' => ['color' => ['rgb' => '0086A8']],
+            'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet->getStyle("A4:{$lastColumn}4")->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '112E49']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ]);
+        $sheet->getStyle("A4:{$lastColumn}{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_HAIR);
+        $sheet->getStyle("A4:{$lastColumn}{$lastRow}")->getBorders()->getAllBorders()->getColor()->setRGB('19A9E5');
+        for ($row = 5; $row <= $lastRow; $row += 2) {
+            $sheet->getStyle("A{$row}:{$lastColumn}{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('C5E8F6');
+        }
+        $sheet->getStyle("{$firstPriceCell}:{$lastColumn}{$lastRow}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("{$firstPriceCell}:{$lastColumn}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("A{$firstDataRow}:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getColumnDimension('A')->setWidth(8);
+        $sheet->getColumnDimension('B')->setWidth(36);
+        $sheet->getColumnDimension('C')->setWidth(14);
+        $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
+        for ($column = 4; $column <= $lastColumnIndex; $column++) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($column))->setWidth($summary ? 18 : 14);
+        }
+        $sheet->getRowDimension(1)->setRowHeight(30);
+        $sheet->getRowDimension(2)->setRowHeight(24);
+        $sheet->getRowDimension(4)->setRowHeight(30);
+        $sheet->freezePane('D5');
+        $sheet->setAutoFilter("A4:{$lastColumn}{$lastRow}");
+        $sheet->getPageSetup()->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
+        $sheet->getPageSetup()->setFitToWidth(1);
+        $sheet->getPageSetup()->setFitToHeight(0);
     }
 
     private function dateRange(Request $request): array

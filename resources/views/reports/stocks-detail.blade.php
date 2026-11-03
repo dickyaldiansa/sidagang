@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4 no-print"><div><h1 class="section-title">Rekap Bulanan Stok</h1><div class="section-subtitle">Rincian stok per laporan distributor berdasarkan rentang tanggal.</div></div><div class="d-flex gap-2"><a class="btn btn-success" href="{{ route('reports.stocks.csv',['start_date'=>$startDate,'end_date'=>$endDate]) }}"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Excel</a><button onclick="print()" class="btn btn-outline-primary"><i class="bi bi-printer me-1"></i> Print / PDF</button></div></div>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4 no-print"><div><h1 class="section-title">Rekap Bulanan Stok</h1><div class="section-subtitle">Rincian stok per laporan distributor berdasarkan rentang tanggal.</div></div><div class="d-flex gap-2"><a class="btn btn-success" href="{{ route('reports.stocks.excel',['start_date'=>$startDate,'end_date'=>$endDate]) }}"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Excel</a><button onclick="print()" class="btn btn-outline-primary"><i class="bi bi-printer me-1"></i> Print / PDF</button></div></div>
 
 <form class="card mb-4 no-print"><div class="card-body"><div class="row align-items-end g-3"><div class="col-md-3"><label class="form-label">Tanggal Awal</label><input type="date" name="start_date" value="{{ $startDate }}" class="form-control" required></div><div class="col-md-3"><label class="form-label">Tanggal Akhir</label><input type="date" name="end_date" value="{{ $endDate }}" class="form-control" required></div><div class="col-md-2"><button class="btn btn-primary w-100">Tampilkan</button></div></div></div></form>
 

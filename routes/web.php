@@ -63,9 +63,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:reports.view')->group(function () {
         Route::get('/laporan/pergerakan-harga', [ReportController::class, 'priceMovement'])->name('reports.price-movement');
         Route::get('/laporan/bulanan', [ReportController::class, 'monthly'])->name('reports.monthly');
-        Route::get('/laporan/bulanan/csv', [ReportController::class, 'csv'])->name('reports.csv');
+        Route::get('/laporan/bulanan/excel', [ReportController::class, 'excel'])->name('reports.excel');
         Route::get('/laporan/stok', [ReportController::class, 'stocks'])->name('reports.stocks');
-        Route::get('/laporan/stok/csv', [ReportController::class, 'stockCsv'])->name('reports.stocks.csv');
+        Route::get('/laporan/stok/excel', [ReportController::class, 'stockExcel'])->name('reports.stocks.excel');
     });
     Route::middleware('permission:market_data.view')->group(function () {
         Route::get('/bidang-pasar', [MarketDataController::class, 'index'])->name('market-data.index');
